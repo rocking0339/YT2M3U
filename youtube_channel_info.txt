@@ -1,8 +1,5 @@
 ~~ DO NOT EDIT THE FIRST 2 LINES
 ~~ FORMAT: <channel name> | <group name> | <logo> | <tvg-id>
 
-Der Korsar des Königs (1953) | Piratenfilm auf Deutsch | https://i.ytimg.com/vi/_a48J35LUVU/mqdefault.jpg |
-https://www.youtube.com/watch?v=_a48J35LUVU
-
-Unter der Flagge der Freibeuter (1961) | Piratenfilm in voller Länge | https://i.ytimg.com/vi/Knjiqj5CXm8/mqdefault.jpg |
-https://www.youtube.com/watch?v=Knjiqj5CXm8
+Der Korsar des Königs (1953) | Piratenfilm auf Deutsch | https://i.ytimg.com/vi/_a48J35LUVU/mqdefault.jpg | https://www.youtube.com/watch?v=_a48J35LUVU
+Unter der Flagge der Freibeuter (1961) | Piratenfilm in voller Länge | https://i.ytimg.com/vi/Knjiqj5CXm8/mqdefault.jpg | https://www.youtube.com/watch?v=Knjiqj5CXm8
