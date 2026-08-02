@@ -14,13 +14,28 @@ def grab(url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=15).text
         if '.m3u8' not in response:
-            if windows:
-                return 'https://raw.githubusercontent.com/vijay6672/YT2M3U/main/assets/moose_na.m3u'
-            os.system(f'wget "{url}" -O temp.txt')
-            with open('temp.txt', errors="ignore") as tf:
-                response = tf.read()
+            if not windows:
+                os.system(f'wget "{url}" -O temp.txt')
+                with open('temp.txt', errors="ignore") as tf:
+                    response = tf.read()
+            
+            # Falls immer noch keine m3u8 gefunden wurde: originale YouTube-URL nutzen
             if '.m3u8' not in response:
-                return 'https://raw.githubusercontent.com/vijay6672/YT2M3U/main/assets/moose_na.m3u'
+                return url
+        
+        end = response.find('.m3u8') + 5
+        tuner = 100
+        while True:
+            if 'https://' in response[end-tuner : end]:
+                link = response[end-tuner : end]
+                start = link.find('https://')
+                end = link.find('.m3u8') + 5
+                return link[start : end]
+            else:
+                tuner += 5
+    except Exception:
+        # Bei einem Verbindungsfehler ebenfalls die direkte URL zurückgeben
+        return url
         
         end = response.find('.m3u8') + 5
         tuner = 100
