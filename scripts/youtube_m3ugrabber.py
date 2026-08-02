@@ -1,22 +1,57 @@
 #! /usr/bin/python3
 
+import requests
+import os
+import sys
 import re
+
+windows = False
+if 'win' in sys.platform:
+    windows = True
+
+def grab(url):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        response = requests.get(url, headers=headers, timeout=15).text
+        if '.m3u8' not in response:
+            if windows:
+                return 'https://raw.githubusercontent.com/vijay6672/YT2M3U/main/assets/moose_na.m3u'
+            os.system(f'wget "{url}" -O temp.txt')
+            with open('temp.txt', errors="ignore") as tf:
+                response = tf.read()
+            if '.m3u8' not in response:
+                return 'https://raw.githubusercontent.com/vijay6672/YT2M3U/main/assets/moose_na.m3u'
+        
+        end = response.find('.m3u8') + 5
+        tuner = 100
+        while True:
+            if 'https://' in response[end-tuner : end]:
+                link = response[end-tuner : end]
+                start = link.find('https://')
+                end = link.find('.m3u8') + 5
+                return link[start : end]
+            else:
+                tuner += 5
+    except Exception:
+        return url
 
 def get_yt_thumbnail(url):
     """Generiert automatisch den Thumbnail-Link aus einer YouTube-URL."""
-    # Sucht nach der 11-stelligen Video-ID in verschiedenen YouTube-Linkformaten
-    pattern = r'(?:v=|\/([0-9A-Za-z_-]{11}).*|youtu\.be\/|embed\/|live\/)([0-9A-Za-z_-]{11})'
-    match = re.search(pattern, url)
-    if match:
-        video_id = match.group(1) or match.group(2)
-        return f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
+    try:
+        match = re.search(r'(?:v=|\/([0-9A-Za-z_-]{11}).*|youtu\.be\/|embed\/|live\/)([0-9A-Za-z_-]{11})', url)
+        if match:
+            video_id = match.group(1) or match.group(2)
+            if video_id:
+                return f'https://img.youtube.com/vi/{video_id}/hqdefault.jpg'
+    except Exception:
+        pass
     return ""
 
 def get_channel_name(url):
     """Liest den YouTube-Kanalnamen dynamisch aus der Seite aus."""
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        resp = requests.get(url, headers=headers, timeout=10).text
+        resp = requests.get(url, headers=headers, timeout=8).text
         match = re.search(r'"author":"([^"]+)"', resp)
         if match:
             return match.group(1)
@@ -27,42 +62,52 @@ def get_channel_name(url):
         pass
     return None
 
-# M3U Header
+# M3U Header ausgeben
 print('#EXTM3U')
 
-with open('../youtube_channel_info.txt', errors="ignore") as f:
-    for line in f:
-        line = line.strip()
-        if not line or line.startswith('~~'):
-            continue
-        
-        parts = [p.strip() for p in line.split('|')]
-        
-        # Flexibel: Funktioniert mit 3 oder 4 Parametern
-        if len(parts) >= 3:
-            ch_name = parts[0]
-            grp_title = parts[1].title()
+# txt-Datei einlesen
+try:
+    with open('../youtube_channel_info.txt', errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('~~'):
+                continue
             
-            # Falls nur 3 Parameter da sind (Name | Gruppe | URL)
-            if len(parts) == 3:
-                yt_url = parts[2]
-                tvg_logo = get_yt_thumbnail(yt_url)
-            else:
-                # Falls 4 Parameter da sind (Name | Gruppe | Logo | URL)
-                # Nimmt das angegebene Logo, oder generiert es falls das Feld leer ist
-                tvg_logo = parts[2] if parts[2] else get_yt_thumbnail(parts[3])
-                yt_url = parts[3]
+            parts = [p.strip() for p in line.split('|')]
             
-            # Kanalname automatisch ermitteln
-            extracted_channel = get_channel_name(yt_url)
-            tvg_id = extracted_channel if extracted_channel else ch_name
-            
-            # 1. Zeile der M3U
-            print(f'\n#EXTINF:-1 tvg-id="{tvg_id}" group-title="{grp_title}" tvg-logo="{tvg_logo}", {ch_name}')
-            
-            # 2. Zeile: Stream-URL
-            if 'youtube.com' in yt_url or 'youtu.be' in yt_url:
-                stream_url = grab(yt_url)
-                print(stream_url if stream_url else yt_url)
-            else:
-                print(yt_url)  os.remove('temp.txt')
+            # Mindestens 3 Teile erforderlich (Titel | Gruppe | URL oder Logo)
+            if len(parts) >= 3:
+                ch_name = parts[0]
+                grp_title = parts[1].title()
+                
+                # Wenn 3 Spalten: Name | Gruppe | YouTube-URL
+                if len(parts) == 3:
+                    yt_url = parts[2]
+                    tvg_logo = get_yt_thumbnail(yt_url)
+                # Wenn 4 oder mehr Spalten: Name | Gruppe | Logo | YouTube-URL
+                else:
+                    yt_url = parts[3]
+                    tvg_logo = parts[2] if parts[2] else get_yt_thumbnail(yt_url)
+                
+                # Kanalname als tvg-id abrufen (sonst Titel als Fallback)
+                extracted_channel = get_channel_name(yt_url)
+                tvg_id = extracted_channel if extracted_channel else ch_name
+                
+                # 1. Zeile der M3U
+                print(f'\n#EXTINF:-1 tvg-id="{tvg_id}" group-title="{grp_title}" tvg-logo="{tvg_logo}", {ch_name}')
+                
+                # 2. Zeile: Stream-URL
+                if 'youtube.com' in yt_url or 'youtu.be' in yt_url:
+                    stream_url = grab(yt_url)
+                    print(stream_url if stream_url else yt_url)
+                else:
+                    print(yt_url)
+except Exception as e:
+    sys.stderr.write(f"Fehler beim Einlesen: {e}\n")
+
+# Aufräumen
+if 'temp.txt' in os.listdir():
+    try:
+        os.remove('temp.txt')
+    except Exception:
+        pass
