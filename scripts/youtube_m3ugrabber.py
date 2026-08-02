@@ -34,7 +34,7 @@ def grab(url):
         return 'https://raw.githubusercontent.com/vijay6672/YT2M3U/main/assets/moose_na.m3u'
 
 # M3U Header (Banner entfernt)
-print('#EXTM3U x-tvg-url="https://github.com/botallen/epg/releases/download/latest/epg.xml"')
+print('#EXTM3U')
 
 with open('../youtube_channel_info.txt', errors="ignore") as f:
     for line in f:
